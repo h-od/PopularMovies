@@ -8,6 +8,8 @@ import io.reactivex.SingleTransformer
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.functions.Consumer
 import io.reactivex.functions.Function
+import org.koin.android.ext.koin.androidApplication
+import org.koin.dsl.module.module
 import org.reactivestreams.Publisher
 import retrofit2.HttpException
 import java.net.ConnectException
@@ -15,8 +17,14 @@ import java.net.UnknownHostException
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
+val dataUtils = module {
+    single { ErrorHandler(get()) }
+    single { RetryHandler(get()) }
+    single { Connectivity(androidApplication()) }
+}
+
 class ErrorHandler(private val retryHandler: RetryHandler) {
-    fun <T> handleErrorsSingle(onNetworkError: Consumer<Throwable>?, onDataError: Consumer<Throwable>?): SingleTransformer<T, T> =
+    fun <T> handle(onNetworkError: Consumer<Throwable>?, onDataError: Consumer<Throwable>?): SingleTransformer<T, T> =
             SingleTransformer { singleStream ->
                 singleStream
                         .onErrorResumeNext { throwable -> Single.error(NetworkException(throwable)) }
@@ -29,8 +37,8 @@ class ErrorHandler(private val retryHandler: RetryHandler) {
             Consumer { throwable ->
                 if (throwable is NetworkException) {
                     when (throwable.kind) {
-                        NetworkException.Kind.DATA -> onDataError?.accept(throwable)
                         NetworkException.Kind.CONNECTIVITY -> onNetworkError?.accept(throwable)
+                        NetworkException.Kind.DATA -> onDataError?.accept(throwable)
                         else -> return@Consumer
                     }
                 }
@@ -41,9 +49,9 @@ class RetryHandler(private val connectivity: Connectivity) {
     fun retryWithConnectivity(): Function<Flowable<Throwable>, Publisher<Any>> = Function { errors ->
         val count = AtomicInteger(0)
         errors.flatMap {
-            if (it is NetworkException && it.kind === NetworkException.Kind.CONNECTIVITY) {
+            if (it is NetworkException && it.kind === NetworkException.Kind.CONNECTIVITY)
                 Flowable.just(connectivity.internetAvailable())
-            } else
+            else
                 Flowable.timer(Math.min(15000, count.incrementAndGet() * 600).toLong(), TimeUnit.SECONDS)
         }
     }

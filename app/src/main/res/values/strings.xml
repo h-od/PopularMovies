@@ -1,3 +1,13 @@
 <resources>
     <string name="app_name">Popular Movies</string>
+
+    <string name="generic_error_title">Something has gone wrong</string>
+    <string name="generic_error_description">Swipe to retry</string>
+
+    <string name="network_error_title">No internet connection detected</string>
+    <string name="network_error_description">Please connect to the internet to see popular movies</string>
+    <string name="transition_name">movie_detail_image</string>
+    <string name="movie_image_content_description">The movies image</string>
+    <string name="movie_list_item_content_description">Movie list item image</string>
+    <string name="error_view_content_description">An error view</string>
 </resources>

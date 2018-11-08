@@ -30,6 +30,9 @@ abstract class Presenter<in V : Presenter.View> {
     protected fun <T> Observable<T>.subscribeUntilDetached(onNext: (T) -> Unit, onError: (Throwable) -> Unit): Disposable =
             subscribe(onNext, onError).apply { clearOnDetached(this) }
 
+    protected fun <T> Single<T>.subscribeUntilDetached(onNext: (T) -> Unit): Disposable =
+            subscribe(onNext).apply { clearOnDetached(this) }
+
     protected fun <T> Single<T>.subscribeUntilDetached(onNext: (T) -> Unit, onError: (Throwable) -> Unit): Disposable =
             subscribe(onNext, onError).apply { clearOnDetached(this) }
 
