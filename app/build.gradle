@@ -47,6 +47,7 @@ dependencies {
     implementation "androidx.appcompat:appcompat:$app_compat_version"
     implementation "androidx.core:core-ktx:$app_compat_version"
     implementation "androidx.recyclerview:recyclerview:1.0.0"
+    implementation "androidx.cardview:cardview:1.0.0"
     implementation "androidx.constraintlayout:constraintlayout:$constraint_layout_version"
 
     implementation "io.reactivex.rxjava2:rxkotlin:$rx_version"

@@ -18,41 +18,49 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
 val dataUtils = module {
-    single { ErrorHandler(get()) }
-    single { RetryHandler(get()) }
+    single { ErrorHandler.Impl(get()) as ErrorHandler }
+    single { RetryHandler.Impl(get()) as RetryHandler }
     single { Connectivity(androidApplication()) }
 }
 
-class ErrorHandler(private val retryHandler: RetryHandler) {
-    fun <T> handle(onNetworkError: Consumer<Throwable>?, onDataError: Consumer<Throwable>?): SingleTransformer<T, T> =
-            SingleTransformer { singleStream ->
-                singleStream
-                        .onErrorResumeNext { throwable -> Single.error(NetworkException(throwable)) }
-                        .observeOn(AndroidSchedulers.mainThread())
-                        .doOnError(handleError(onNetworkError, onDataError))
-                        .retryWhen(retryHandler.retryWithConnectivity())
-            }
+interface ErrorHandler {
+    fun <T> handle(onNetworkError: Consumer<Throwable>?, onDataError: Consumer<Throwable>?): SingleTransformer<T, T>
 
-    private fun handleError(onNetworkError: Consumer<Throwable>?, onDataError: Consumer<Throwable>?): Consumer<Throwable> =
-            Consumer { throwable ->
-                if (throwable is NetworkException) {
-                    when (throwable.kind) {
-                        NetworkException.Kind.CONNECTIVITY -> onNetworkError?.accept(throwable)
-                        NetworkException.Kind.DATA -> onDataError?.accept(throwable)
-                        else -> return@Consumer
+    class Impl(private val retryHandler: RetryHandler) : ErrorHandler {
+        override fun <T> handle(onNetworkError: Consumer<Throwable>?, onDataError: Consumer<Throwable>?): SingleTransformer<T, T> =
+                SingleTransformer { singleStream ->
+                    singleStream
+                            .onErrorResumeNext { throwable -> Single.error(NetworkException(throwable)) }
+                            .observeOn(AndroidSchedulers.mainThread())
+                            .doOnError(handleError(onNetworkError, onDataError))
+                            .retryWhen(retryHandler.retryWithConnectivity())
+                }
+
+        private fun handleError(onNetworkError: Consumer<Throwable>?, onDataError: Consumer<Throwable>?): Consumer<Throwable> =
+                Consumer { throwable ->
+                    if (throwable is NetworkException) {
+                        when (throwable.kind) {
+                            NetworkException.Kind.CONNECTIVITY -> onNetworkError?.accept(throwable)
+                            NetworkException.Kind.DATA -> onDataError?.accept(throwable)
+                            else -> return@Consumer
+                        }
                     }
                 }
-            }
+    }
 }
 
-class RetryHandler(private val connectivity: Connectivity) {
-    fun retryWithConnectivity(): Function<Flowable<Throwable>, Publisher<Any>> = Function { errors ->
-        val count = AtomicInteger(0)
-        errors.flatMap {
-            if (it is NetworkException && it.kind === NetworkException.Kind.CONNECTIVITY)
-                Flowable.just(connectivity.internetAvailable())
-            else
-                Flowable.timer(Math.min(15000, count.incrementAndGet() * 600).toLong(), TimeUnit.SECONDS)
+interface RetryHandler {
+    fun retryWithConnectivity(): Function<Flowable<Throwable>, Publisher<Any>>
+
+    class Impl(private val connectivity: Connectivity) : RetryHandler {
+        override fun retryWithConnectivity(): Function<Flowable<Throwable>, Publisher<Any>> = Function { errors ->
+            val count = AtomicInteger(0)
+            errors.flatMap {
+                if (it is NetworkException && it.kind === NetworkException.Kind.CONNECTIVITY)
+                    Flowable.just(connectivity.internetAvailable())
+                else
+                    Flowable.timer(Math.min(15000, count.incrementAndGet() * 600).toLong(), TimeUnit.SECONDS)
+            }
         }
     }
 }
