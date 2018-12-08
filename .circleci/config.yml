@@ -2,10 +2,10 @@ version: 2
 jobs:
   build:
     docker:
-      - image: drazisil/android-sdk:1.0.41
+      - image: circleci/android:api-2528
     steps:
       - checkout
-      - run: cp -r ./licenses $ANDROID_HOME/licenses
+      - run: cp -r .circleci/licenses $ANDROID_HOME/licenses
       - run: mkdir artifacts
       - run:
           name: Create AVD
