@@ -3,15 +3,11 @@ jobs:
   build:
     docker:
       - image: drazisil/android-sdk:1.0.41
-    working_directory: ~/androidlearn
+    working_directory: ~/hod_movies
     steps:
-      # Ensure your image has git, otherwise the checkout step will fail
-      # - run: apt-get -qq update; apt-get -y install git
       - checkout
+      - run: cp -r licenses/. $ANDROID_HOME/licenses
       - run: mkdir artifacts
-      - run:
-          name: List what is currently installed
-          command: sdkmanager --list
       - run:
           name: Create AVD
           command: |
@@ -49,7 +45,6 @@ jobs:
             # Check if package manager is running
             adb shell pm list packages
             # Install package
-            yes | sudo $ANDROID_HOME/tools/bin/sdkmanager --licenses
             $ANDROID_SDK_ROOT/platform-tools/adb install /home/android/androidlearn/app/build/outputs/apk/app-debug.apk
             ./gradlew connectedAndroidTest
       - store_artifacts:
