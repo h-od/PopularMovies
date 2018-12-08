@@ -2,7 +2,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: circleci/android:api-28
+      - image: drazisil/android-sdk:1.0.41
     steps:
       - checkout
       - run: cp -r .circleci/licenses $ANDROID_HOME/licenses
