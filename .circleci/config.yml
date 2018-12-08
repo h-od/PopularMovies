@@ -49,6 +49,7 @@ jobs:
             # Check if package manager is running
             adb shell pm list packages
             # Install package
+            yes | sudo $ANDROID_HOME/tools/bin/sdkmanager --licenses
             $ANDROID_SDK_ROOT/platform-tools/adb install /home/android/androidlearn/app/build/outputs/apk/app-debug.apk
             ./gradlew connectedAndroidTest
       - store_artifacts:
