@@ -2,7 +2,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: drazisil/android-sdk:1.0.60
+      - image: drazisil/android-sdk:1.0.41
     steps:
       - checkout
       - run: cp -r ./licenses $ANDROID_HOME/licenses
